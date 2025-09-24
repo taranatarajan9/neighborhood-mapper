@@ -20,10 +20,18 @@
     </header>
     <main>
         <div id="app">
-            <!-- App content will be rendered here -->
-            <p>Welcome to Neighborhood Mapper!</p>
+            <div class="map-container">
+                <div id="map"></div>
+                <div class="neighborhood-form">
+                    <h3>Name This Location</h3>
+                    <form id="locationForm">
+                        <input type="text" id="neighborhoodName" placeholder="Enter neighborhood name" required>
+                        <button type="submit">Save Location</button>
+                    </form>
+                    <div id="savedLocations"></div>
+                </div>
+            </div>
         </div>
-        <div id="map"></div>
     </main>
     <footer>
     </footer>

@@ -37,10 +37,57 @@ footer {
     color: #7f8c8d;
 }
 
+.map-container {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+}
+
 #map { 
     height: 500px; 
-    width: 100%;
-    margin-top: 20px;
+    flex: 2;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.neighborhood-form {
+    flex: 1;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.neighborhood-form h3 {
+    margin-top: 0;
+    color: #2c3e50;
+}
+
+.neighborhood-form input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.neighborhood-form button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.neighborhood-form button:hover {
+    background-color: #2980b9;
+}
+
+#savedLocations {
+    margin-top: 20px;
 }
