@@ -4,78 +4,87 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Neighborhood Mapper</title>
-    <!-- Load Leaflet CSS first -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossorigin="anonymous" />
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+        }
+        
+        #map {
+            height: 600px;
+            width: 100%;
+            background-color: #e9ecef;
+        }
+        
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            height: 100%;
+        }
+    </style>
 </head>
 <body>
     <div class="app-container">
-        <header>
-            <h1>Neighborhood Mapper</h1>
-        </header>
-        <main>
-            <div id="app">
-                <div class="map-container">
-                    <div id="map"></div>
-                    <div class="neighborhood-form">
-                        <h3>Name This Location</h3>
-                        <form id="locationForm">
-                            <input type="text" id="neighborhoodName" placeholder="Enter neighborhood name" required>
-                            <button type="submit">Save Location</button>
-                        </form>
-                        <div id="savedLocations"></div>
+        <h1>Neighborhood Mapper</h1>
+        <div class="map-container">
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <h3>Name This Location</h3>
+                    <form id="locationForm">
+                        <div class="form-group">
+                            <label for="neighborhoodName">Neighborhood Name</label>
+                            <input type="text" id="neighborhoodName" placeholder="Enter a name for this location" required>
+                        </div>
+                        <div id="coordinates" class="coordinates-display">
+                            Click on the map to set a location
+                        </div>
+                        <button type="submit" class="btn-save">
+                            <i class="fas fa-save"></i> Save Location
+                        </button>
+                    </form>
+                </div>
+                
+                <div class="sidebar-section saved-locations">
+                    <h4>Saved Locations</h4>
+                    <div id="savedLocations">
+                        <p class="no-locations">No locations saved yet</p>
                     </div>
                 </div>
             </div>
-        </main>
-        <footer>
-            <p>Click on the map to add a location</p>
-        </footer>
+            
+            <div id="map"></div>
+        </div>
+        </div>
     </div>
 
-    <!-- Load Leaflet JS with error handling -->
+    <!-- Load Leaflet -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Load our app -->
+    <script src="app.js"></script>
+    
+    <!-- Debug script -->
     <script>
-        function loadScript(src, integrity, crossorigin, callback) {
-            const script = document.createElement('script');
-            script.src = src;
-            if (integrity) script.integrity = integrity;
-            if (crossorigin) script.crossOrigin = crossorigin;
-            script.onload = () => {
-                console.log('Script loaded successfully:', src);
-                if (callback) callback();
-            };
-            script.onerror = () => {
-                console.error('Error loading script:', src);
-            };
-            document.body.appendChild(script);
-        }
-
-        // Load Leaflet first
-        loadScript(
-            'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
-            'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=',
-            'anonymous',
-            function() {
-                // After Leaflet loads, load our utility module
-                const utilScript = document.createElement('script');
-                utilScript.type = 'module';
-                utilScript.textContent = `
-                    import { groupLocationsById } from './locationUtils.js';
-                    window.groupLocationsById = groupLocationsById;
-                    console.log('Utility module loaded');
-                    
-                    // Load the app after everything is ready
-                    const appScript = document.createElement('script');
-                    appScript.type = 'module';
-                    appScript.src = 'app.js';
-                    document.body.appendChild(appScript);
-                `;
-                document.body.appendChild(utilScript);
+        // Check if Leaflet is loaded
+        console.log('Leaflet loaded:', typeof L !== 'undefined');
+        
+        // Check map container after page loads
+        window.addEventListener('load', function() {
+            const mapEl = document.getElementById('map');
+            if (mapEl) {
+                console.log('Map container found');
+                console.log('Map container dimensions:', {
+                    width: mapEl.offsetWidth,
+                    height: mapEl.offsetHeight
+                });
+            } else {
+                console.error('Map container not found!');
             }
-        );
+        });
     </script>
 </body>
 </html>
-

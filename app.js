@@ -1,350 +1,179 @@
-// Import utility modules
-import { 
-    createLocation, 
-    saveToLocalStorage, 
-    loadFromLocalStorage,
-    groupLocationsById,
-    getNeighborhoodColor
-} from './locationUtils.js';
-
-import { 
-    drawLocationSquare, 
-    updateMapWithLocations as updateMap 
-} from './mapUtils.js';
-
-// Store the last clicked coordinates and map state
-let lastClickedCoords = null;
-let map = null;
-let currentMarker = null;
+// Application state
 let savedLocations = [];
-let locationLayerGroup = null; // This will hold our location markers
+let lastClickedCoords = null;
 
-// Make sure the DOM is fully loaded
-function initializeApp() {
-    console.log('Initializing app...');
+// DOM Elements
+const locationForm = document.getElementById('locationForm');
+const neighborhoodNameInput = document.getElementById('neighborhoodName');
+const coordinatesDisplay = document.getElementById('coordinates');
+const savedLocationsContainer = document.getElementById('savedLocations');
+
+// Initialize the application when the DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM fully loaded');
+    
+    // Check if Leaflet is loaded
+    if (typeof L === 'undefined') {
+        console.error('Leaflet not loaded!');
+        return;
+    }
     
     // Initialize the map
-    initMap();
+    const map = L.map('map').setView([37.7749, -122.4194], 13);
     
-    // Load saved locations
-    savedLocations = loadFromLocalStorage();
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(map);
     
-    // Initialize the UI
-    initEventListeners();
+    // Add a marker
+    const marker = L.marker([37.7749, -122.4194], {
+        draggable: true
+    }).addTo(map);
     
-    // Update the map with any saved locations
-    updateMapWithLocations();
+    // Handle map click
+    map.on('click', function(e) {
+        console.log('Map clicked at:', e.latlng);
+        lastClickedCoords = e.latlng;
+        marker.setLatLng(e.latlng);
+        updateCoordinatesDisplay(e.latlng);
+    });
     
-    console.log('App initialization complete');
-}
-
-// Start the application when the DOM is fully loaded
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeApp);
-} else {
-    // DOM is already ready
-    initializeApp();
-}
-
-// Initialize the map
-function initMap() {
-    console.log('Initializing map...');
+    // Handle marker drag end
+    marker.on('dragend', function(e) {
+        const newLatLng = marker.getLatLng();
+        lastClickedCoords = newLatLng;
+        updateCoordinatesDisplay(newLatLng);
+    });
     
-    // Make sure the map container exists and is visible
-    const mapElement = document.getElementById('map');
-    if (!mapElement) {
-        console.error('Map container not found!');
-        return;
-    }
-    
-    // Make sure Leaflet is available
-    if (typeof L === 'undefined') {
-        console.error('Leaflet is not loaded!');
-        return;
-    }
-    
-    console.log('Leaflet version:', L.version);
-    
-    try {
-        console.log('Creating map instance...');
-        
-        // Initialize the map centered on San Francisco
-        map = L.map('map', {
-            center: [37.7749, -122.4194],
-            zoom: 12,
-            zoomControl: false, // We'll add it manually
-            preferCanvas: true,  // Better performance for many markers
-            renderer: L.canvas(),
-            // Add these options to help with debugging
-            fadeAnimation: false,
-            markerZoomAnimation: false
-        });
-        
-        console.log('Map instance created:', map);
-        
-        // Add event listeners for map loading
-        map.on('load', () => console.log('Map loaded event fired'));
-        map.on('tileload', (e) => console.log('Tile loaded:', e.url));
-        map.on('tileerror', (e) => console.error('Tile error:', e.url, e.error));
-        
-        // Add OpenStreetMap tiles with error handling
-        console.log('Adding OpenStreetMap layer...');
-        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            maxZoom: 19,
-            detectRetina: true,
-            // Add these options to help with debugging
-            errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+/HgAEtAKsWX8U3wAAAABJRU5ErkJggg==',
-            crossOrigin: true
-        }).addTo(map);
-        
-        console.log('OpenStreetMap layer added');
-        
-        // Create a layer group for location markers
-        locationLayerGroup = L.layerGroup().addTo(map);
-        
-        // Add zoom control
-        console.log('Adding zoom control...');
-        L.control.zoom({
-            position: 'topright'
-        }).addTo(map);
-        
-        // Add click handler to the map
-        map.on('click', onMapClick);
-        
-        // Function to initialize map size
-        const initMapSize = () => {
-            if (!map) return;
+    // Handle form submission
+    if (locationForm) {
+        locationForm.addEventListener('submit', function(e) {
+            e.preventDefault();
             
-            console.log('Initializing map size...');
-            console.log('Map container dimensions:', {
-                width: mapElement.offsetWidth,
-                height: mapElement.offsetHeight,
-                style: window.getComputedStyle(mapElement).display
+            const name = neighborhoodNameInput.value.trim();
+            
+            if (!lastClickedCoords) {
+                alert('Please click on the map to set a location first');
+                return;
+            }
+            
+            if (!name) {
+                alert('Please enter a name for this location');
+                return;
+            }
+            
+            saveLocation({
+                name: name,
+                lat: lastClickedCoords.lat,
+                lng: lastClickedCoords.lng,
+                date: new Date().toISOString()
             });
             
-            // Force the map to update its size
-            map.invalidateSize();
-            
-            // Check if the map has valid bounds
-            const bounds = map.getBounds();
-            console.log('Map bounds:', bounds);
-            
-            if (!bounds.isValid() || bounds.getNorthEast().equals(bounds.getSouthWest())) {
-                console.warn('Map bounds are not valid, retrying...');
-                setTimeout(initMapSize, 100);
-            } else {
-                console.log('Map initialized successfully with bounds:', bounds);
-            }
-        };
-        
-        // Initial size check with a small delay
-        setTimeout(initMapSize, 100);
-        
-        // Also check on window resize
-        window.addEventListener('resize', () => {
-            console.log('Window resized, updating map size...');
-            setTimeout(initMapSize, 100);
+            // Reset form
+            neighborhoodNameInput.value = '';
+            neighborhoodNameInput.focus();
         });
-        
-        console.log('Map initialization complete');
-    } catch (error) {
-        console.error('Error initializing map:', error);
     }
-}
+    
+    // Load saved locations
+    loadSavedLocations();
+    
+    // Update coordinates display initially
+    updateCoordinatesDisplay(marker.getLatLng());
+    
+    // Log map info
+    console.log('Map initialized:', map);
+    
+    // Make map available globally for debugging
+    window.map = map;
+    window.marker = marker;
+});
 
-// Initialize event listeners
-function initEventListeners() {
-    // Form submission
-    document.getElementById('locationForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        if (!lastClickedCoords) {
-            alert('Please click on the map to select a location first');
-            return;
-        }
-        
-        const nameInput = document.getElementById('neighborhoodName');
-        const locationName = nameInput.value.trim();
-        
-        if (!locationName) {
-            alert('Please enter a name for this location');
-            return;
-        }
-        
-        // Save the location
-        saveLocation(locationName, lastClickedCoords);
-        
-        // Clear the input
-        nameInput.value = '';
-        
-        // Update the UI
-        updateMapWithLocations();
+// Save a location
+function saveLocation(location) {
+    // Add to saved locations
+    savedLocations.unshift({
+        id: Date.now(),
+        ...location
     });
-}
-
-// Handle map click events
-function onMapClick(e) {
-    // Store the clicked coordinates
-    lastClickedCoords = e.latlng;
-    
-    // Update the marker
-    updateMarker(e.latlng);
-    
-    // Focus the input field
-    document.getElementById('neighborhoodName').focus();
-}
-
-// Update the marker position
-function updateMarker(latlng) {
-    if (currentMarker) {
-        map.removeLayer(currentMarker);
-    }
-    
-    currentMarker = L.marker(latlng)
-        .addTo(map)
-        .bindPopup(`Location: ${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`)
-        .openPopup();
-}
-
-// Save a new location
-function saveLocation(name, coords) {
-    console.log('Saving location:', name, coords);
-    
-    const location = createLocation(name, coords);
-    let isNewLocation = false;
-    
-    // Find if we already have a location with these coordinates
-    const existingLocationIndex = savedLocations.findIndex(loc => loc.id === location.id);
-    
-    if (existingLocationIndex >= 0) {
-        // Update existing location
-        const existingLocation = savedLocations[existingLocationIndex];
-        if (!existingLocation.names.includes(name)) {
-            existingLocation.names.push(name);
-            existingLocation.count++;
-            existingLocation.date = new Date().toISOString();
-        }
-    } else {
-        // Add new location
-        savedLocations.push(location);
-        isNewLocation = true;
-    }
     
     // Save to localStorage
-    saveToLocalStorage(savedLocations);
+    localStorage.setItem('savedLocations', JSON.stringify(savedLocations));
     
-    // Update the map with all locations
-    updateMapWithLocations();
-    
-    // If this is the first location, center the map on it
-    if (isNewLocation && savedLocations.length === 1) {
-        map.setView([coords.lat, coords.lng], 15);
-    }
+    // Update the UI
+    updateSavedLocations();
 }
 
-// Update the map with all saved locations
-function updateMapWithLocations() {
-    console.log('Updating map with locations...');
-    console.log('Current saved locations:', savedLocations);
-    
-    // Make sure we have a valid map instance
-    if (!map) {
-        console.error('Cannot update map: map is not initialized');
-        return;
-    }
-    
-    // Make sure the location layer group exists
-    if (!locationLayerGroup) {
-        console.error('Cannot update map: location layer group is not initialized');
-        return;
-    }
-    
-    // Make sure groupLocationsById is available
-    if (typeof groupLocationsById !== 'function') {
-        console.error('groupLocationsById is not a function');
-        return;
-    }
-    
+// Load saved locations from localStorage
+function loadSavedLocations() {
     try {
-        // Update the map with the current locations
-        updateMap(map, savedLocations, locationLayerGroup);
-        
-        // Display saved locations in the sidebar
-        displaySavedLocations();
+        const saved = localStorage.getItem('savedLocations');
+        if (saved) {
+            savedLocations = JSON.parse(saved);
+            updateSavedLocations();
+        }
     } catch (error) {
-        console.error('Error updating map with locations:', error);
+        console.error('Error loading saved locations:', error);
     }
 }
 
-// Display all saved locations in the sidebar
-function displaySavedLocations() {
-    const container = document.getElementById('savedLocations');
-    if (!container) return;
-    
-    container.innerHTML = '<h4>Saved Locations:</h4>';
+// Update the saved locations list
+function updateSavedLocations() {
+    if (!savedLocationsContainer) return;
     
     if (savedLocations.length === 0) {
-        container.innerHTML += '<p>No locations saved yet.</p>';
+        savedLocationsContainer.innerHTML = '<p class="no-locations">No locations saved yet</p>';
         return;
     }
     
-    const list = document.createElement('ul');
-    list.style.listStyle = 'none';
-    list.style.padding = '0';
-    list.style.maxHeight = '300px';
-    list.style.overflowY = 'auto';
+    // Clear the container
+    savedLocationsContainer.innerHTML = '';
     
-    // Create a copy of the array to avoid mutating the original
-    const sortedLocations = [...savedLocations].sort((a, b) => 
-        new Date(b.date) - new Date(a.date)
-    );
-    
-    sortedLocations.forEach(loc => {
-        if (!loc || !loc.names) return;
-        
-        const item = document.createElement('li');
-        item.style.padding = '10px';
-        item.style.margin = '8px 0';
-        item.style.background = '#fff';
-        item.style.borderRadius = '4px';
-        item.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
-        item.style.borderLeft = `4px solid ${loc.count > 1 ? '#e74c3c' : '#3498db'}`;
-        
-        // Ensure names is an array before joining
-        const locationNames = Array.isArray(loc.names) ? loc.names : [loc.names || 'Unnamed Location'];
-        
-        item.innerHTML = `
-            <strong>${locationNames.join(', ')}</strong>
-            ${loc.count > 1 ? `<span style="background: #e74c3c; color: white; border-radius: 10px; padding: 2px 6px; font-size: 0.8em; margin-left: 5px;">${loc.count}</span>` : ''}
-            <div style="margin-top: 5px;">
-                <small>${(loc.lat || 0).toFixed(2)}, ${(loc.lng || 0).toFixed(2)}</small><br>
-                <small style="color: #666;">${loc.date || 'No date'}</small>
-            </div>
+    // Add each saved location
+    savedLocations.forEach(location => {
+        const locationElement = document.createElement('div');
+        locationElement.className = 'location-item';
+        locationElement.innerHTML = `
+            <h5>${location.name}</h5>
+            <p>${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}</p>
         `;
         
-        // Add click handler to fly to the location
-        item.style.cursor = 'pointer';
-        item.addEventListener('click', () => {
-            if (loc.lat && loc.lng) {
-                map.flyTo([loc.lat, loc.lng], 15);
-                
-                // Highlight the square by opening its popup
-                if (window.locationSquares && Array.isArray(window.locationSquares)) {
-                    const square = window.locationSquares.find(sq => 
-                        sq && sq.getBounds && 
-                        sq.getBounds().getCenter().lat === loc.lat && 
-                        sq.getBounds().getCenter().lng === loc.lng
-                    );
-                    if (square && square.openPopup) {
-                        square.openPopup();
-                    }
-                }
-            }
+        // Add click handler to center map on this location
+        locationElement.addEventListener('click', () => {
+            window.map.setView([location.lat, location.lng], 15);
+            window.marker.setLatLng([location.lat, location.lng]);
+            updateCoordinatesDisplay({ lat: location.lat, lng: location.lng });
         });
         
-        list.appendChild(item);
+        savedLocationsContainer.appendChild(locationElement);
     });
-    
-    container.appendChild(list);
 }
+
+// Update the coordinates display
+function updateCoordinatesDisplay(latlng) {
+    if (!coordinatesDisplay) return;
+    
+    coordinatesDisplay.textContent = 
+        `Lat: ${latlng.lat.toFixed(6)}, Lng: ${latlng.lng.toFixed(6)}`;
+}
+
+// Debug function
+window.debugMap = function() {
+    console.log('=== Map Debug Info ===');
+    console.log('Last clicked coords:', lastClickedCoords);
+    console.log('Saved locations:', savedLocations);
+    
+    if (window.map) {
+        console.log('Map center:', window.map.getCenter());
+        console.log('Map zoom:', window.map.getZoom());
+        window.map.invalidateSize();
+    } else {
+        console.log('Map not initialized');
+    }
+    
+    console.log('=====================');
+};
+
+
