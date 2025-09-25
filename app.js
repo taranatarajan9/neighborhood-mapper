@@ -3,7 +3,8 @@ import {
     createLocation, 
     saveToLocalStorage, 
     loadFromLocalStorage,
-    groupLocationsById 
+    groupLocationsById,
+    getNeighborhoodColor
 } from './locationUtils.js';
 
 import { 
@@ -18,8 +19,10 @@ let currentMarker = null;
 let savedLocations = [];
 window.locationSquares = [];
 
-// Initialize the application
-document.addEventListener('DOMContentLoaded', () => {
+// Make sure the DOM is fully loaded
+function initializeApp() {
+    console.log('Initializing app...');
+    
     // Initialize the map
     initMap();
     
@@ -31,43 +34,80 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Update the map with any saved locations
     updateMapWithLocations();
-});
+    
+    console.log('App initialization complete');
+}
+
+// Start the application when the DOM is fully loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    // DOM is already ready
+    initializeApp();
+}
 
 // Initialize the map
 function initMap() {
-    // Make sure the map container has a height
+    console.log('Initializing map...');
+    
+    // Make sure the map container exists
     const mapElement = document.getElementById('map');
+    if (!mapElement) {
+        console.error('Map container not found!');
+        return;
+    }
+    
+    // Set map container dimensions if not already set
     if (!mapElement.style.height) {
         mapElement.style.height = '600px';
     }
     
-    // Initialize the map centered on San Francisco
-    map = L.map('map', {
-        center: [37.7749, -122.4194],
-        zoom: 12,
-        zoomControl: true
-    });
-    
-    // Add OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
-        detectRetina: true
-    }).addTo(map);
-    
-    // Add zoom control
-    L.control.zoom({
-        position: 'topright'
-    }).addTo(map);
-    
-    // Add click handler to the map
-    map.on('click', onMapClick);
-    
-    // Add initial marker
-    currentMarker = L.marker([37.7879, -122.4074])
-        .addTo(map)
-        .bindPopup('Union Square, San Francisco')
-        .openPopup();
+    try {
+        console.log('Creating map instance...');
+        
+        // Initialize the map centered on San Francisco
+        map = L.map('map', {
+            center: [37.7749, -122.4194],
+            zoom: 12,
+            zoomControl: false, // We'll add it manually
+            preferCanvas: true  // Better performance for many markers
+        });
+        
+        console.log('Map instance created:', map);
+        console.log('Map container bounds:', map.getBounds());
+        
+        // Add OpenStreetMap tiles with error handling
+        console.log('Adding OpenStreetMap layer...');
+        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19,
+            detectRetina: true
+        }).addTo(map);
+        
+        console.log('OpenStreetMap layer added');
+        
+        // Add zoom control
+        console.log('Adding zoom control...');
+        L.control.zoom({
+            position: 'topright'
+        }).addTo(map);
+        
+        // Add click handler to the map
+        map.on('click', onMapClick);
+        
+        // Add initial marker
+        console.log('Adding initial marker...');
+        currentMarker = L.marker([37.7879, -122.4074])
+            .addTo(map)
+            .bindPopup('Union Square, San Francisco')
+            .openPopup();
+            
+        console.log('Map initialization complete');
+        console.log('Map center:', map.getCenter());
+        console.log('Map zoom:', map.getZoom());
+    } catch (error) {
+        console.error('Error initializing map:', error);
+    }
 }
 
 // Initialize event listeners
@@ -150,8 +190,37 @@ function saveLocation(name, coords) {
 
 // Update the map with all saved locations
 function updateMapWithLocations() {
-    window.locationSquares = updateMap(map, savedLocations, window.locationSquares);
-    displaySavedLocations();
+    console.log('Updating map with locations...');
+    console.log('Current saved locations:', savedLocations);
+    
+    // Make sure we have a valid map instance
+    if (!map) {
+        console.error('Cannot update map: map is not initialized');
+        return;
+    }
+    
+    // Make sure groupLocationsById is available
+    if (typeof groupLocationsById !== 'function') {
+        console.error('groupLocationsById is not a function');
+        return;
+    }
+    
+    try {
+        // Make sure we have locations to display
+        if (!savedLocations || savedLocations.length === 0) {
+            console.log('No locations to display');
+            return;
+        }
+        
+        console.log('Calling updateMap with', savedLocations.length, 'locations');
+        window.locationSquares = updateMap(map, savedLocations, window.locationSquares);
+        console.log('Map updated with', (window.locationSquares || []).length, 'location squares');
+        
+        // Display saved locations in the sidebar
+        displaySavedLocations();
+    } catch (error) {
+        console.error('Error updating map with locations:', error);
+    }
 }
 
 // Display all saved locations in the sidebar
