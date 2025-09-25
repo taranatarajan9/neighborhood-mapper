@@ -17,7 +17,7 @@ let lastClickedCoords = null;
 let map = null;
 let currentMarker = null;
 let savedLocations = [];
-window.locationSquares = [];
+let locationLayerGroup = null; // This will hold our location markers
 
 // Make sure the DOM is fully loaded
 function initializeApp() {
@@ -50,17 +50,20 @@ if (document.readyState === 'loading') {
 function initMap() {
     console.log('Initializing map...');
     
-    // Make sure the map container exists
+    // Make sure the map container exists and is visible
     const mapElement = document.getElementById('map');
     if (!mapElement) {
         console.error('Map container not found!');
         return;
     }
     
-    // Set map container dimensions if not already set
-    if (!mapElement.style.height) {
-        mapElement.style.height = '600px';
+    // Make sure Leaflet is available
+    if (typeof L === 'undefined') {
+        console.error('Leaflet is not loaded!');
+        return;
     }
+    
+    console.log('Leaflet version:', L.version);
     
     try {
         console.log('Creating map instance...');
@@ -70,21 +73,35 @@ function initMap() {
             center: [37.7749, -122.4194],
             zoom: 12,
             zoomControl: false, // We'll add it manually
-            preferCanvas: true  // Better performance for many markers
+            preferCanvas: true,  // Better performance for many markers
+            renderer: L.canvas(),
+            // Add these options to help with debugging
+            fadeAnimation: false,
+            markerZoomAnimation: false
         });
         
         console.log('Map instance created:', map);
-        console.log('Map container bounds:', map.getBounds());
+        
+        // Add event listeners for map loading
+        map.on('load', () => console.log('Map loaded event fired'));
+        map.on('tileload', (e) => console.log('Tile loaded:', e.url));
+        map.on('tileerror', (e) => console.error('Tile error:', e.url, e.error));
         
         // Add OpenStreetMap tiles with error handling
         console.log('Adding OpenStreetMap layer...');
         const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
             maxZoom: 19,
-            detectRetina: true
+            detectRetina: true,
+            // Add these options to help with debugging
+            errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+/HgAEtAKsWX8U3wAAAABJRU5ErkJggg==',
+            crossOrigin: true
         }).addTo(map);
         
         console.log('OpenStreetMap layer added');
+        
+        // Create a layer group for location markers
+        locationLayerGroup = L.layerGroup().addTo(map);
         
         // Add zoom control
         console.log('Adding zoom control...');
@@ -95,16 +112,42 @@ function initMap() {
         // Add click handler to the map
         map.on('click', onMapClick);
         
-        // Add initial marker
-        console.log('Adding initial marker...');
-        currentMarker = L.marker([37.7879, -122.4074])
-            .addTo(map)
-            .bindPopup('Union Square, San Francisco')
-            .openPopup();
+        // Function to initialize map size
+        const initMapSize = () => {
+            if (!map) return;
             
+            console.log('Initializing map size...');
+            console.log('Map container dimensions:', {
+                width: mapElement.offsetWidth,
+                height: mapElement.offsetHeight,
+                style: window.getComputedStyle(mapElement).display
+            });
+            
+            // Force the map to update its size
+            map.invalidateSize();
+            
+            // Check if the map has valid bounds
+            const bounds = map.getBounds();
+            console.log('Map bounds:', bounds);
+            
+            if (!bounds.isValid() || bounds.getNorthEast().equals(bounds.getSouthWest())) {
+                console.warn('Map bounds are not valid, retrying...');
+                setTimeout(initMapSize, 100);
+            } else {
+                console.log('Map initialized successfully with bounds:', bounds);
+            }
+        };
+        
+        // Initial size check with a small delay
+        setTimeout(initMapSize, 100);
+        
+        // Also check on window resize
+        window.addEventListener('resize', () => {
+            console.log('Window resized, updating map size...');
+            setTimeout(initMapSize, 100);
+        });
+        
         console.log('Map initialization complete');
-        console.log('Map center:', map.getCenter());
-        console.log('Map zoom:', map.getZoom());
     } catch (error) {
         console.error('Error initializing map:', error);
     }
@@ -166,7 +209,10 @@ function updateMarker(latlng) {
 
 // Save a new location
 function saveLocation(name, coords) {
+    console.log('Saving location:', name, coords);
+    
     const location = createLocation(name, coords);
+    let isNewLocation = false;
     
     // Find if we already have a location with these coordinates
     const existingLocationIndex = savedLocations.findIndex(loc => loc.id === location.id);
@@ -182,10 +228,19 @@ function saveLocation(name, coords) {
     } else {
         // Add new location
         savedLocations.push(location);
+        isNewLocation = true;
     }
     
     // Save to localStorage
     saveToLocalStorage(savedLocations);
+    
+    // Update the map with all locations
+    updateMapWithLocations();
+    
+    // If this is the first location, center the map on it
+    if (isNewLocation && savedLocations.length === 1) {
+        map.setView([coords.lat, coords.lng], 15);
+    }
 }
 
 // Update the map with all saved locations
@@ -199,6 +254,12 @@ function updateMapWithLocations() {
         return;
     }
     
+    // Make sure the location layer group exists
+    if (!locationLayerGroup) {
+        console.error('Cannot update map: location layer group is not initialized');
+        return;
+    }
+    
     // Make sure groupLocationsById is available
     if (typeof groupLocationsById !== 'function') {
         console.error('groupLocationsById is not a function');
@@ -206,15 +267,8 @@ function updateMapWithLocations() {
     }
     
     try {
-        // Make sure we have locations to display
-        if (!savedLocations || savedLocations.length === 0) {
-            console.log('No locations to display');
-            return;
-        }
-        
-        console.log('Calling updateMap with', savedLocations.length, 'locations');
-        window.locationSquares = updateMap(map, savedLocations, window.locationSquares);
-        console.log('Map updated with', (window.locationSquares || []).length, 'location squares');
+        // Update the map with the current locations
+        updateMap(map, savedLocations, locationLayerGroup);
         
         // Display saved locations in the sidebar
         displaySavedLocations();

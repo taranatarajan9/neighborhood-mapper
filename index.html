@@ -4,46 +4,78 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Neighborhood Mapper</title>
+    <!-- Load Leaflet CSS first -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossorigin=""/>
+          crossorigin="anonymous" />
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <header>
-        <h1>Neighborhood Mapper</h1>
-    </header>
-    <main>
-        <div id="app">
-            <div class="map-container">
-                <div id="map"></div>
-                <div class="neighborhood-form">
-                    <h3>Name This Location</h3>
-                    <form id="locationForm">
-                        <input type="text" id="neighborhoodName" placeholder="Enter neighborhood name" required>
-                        <button type="submit">Save Location</button>
-                    </form>
-                    <div id="savedLocations"></div>
+    <div class="app-container">
+        <header>
+            <h1>Neighborhood Mapper</h1>
+        </header>
+        <main>
+            <div id="app">
+                <div class="map-container">
+                    <div id="map"></div>
+                    <div class="neighborhood-form">
+                        <h3>Name This Location</h3>
+                        <form id="locationForm">
+                            <input type="text" id="neighborhoodName" placeholder="Enter neighborhood name" required>
+                            <button type="submit">Save Location</button>
+                        </form>
+                        <div id="savedLocations"></div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </main>
-    <footer>
-    </footer>
-    <!-- Load Leaflet first -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-            crossorigin=""></script>
-    
-    <!-- Load our utility modules first -->
-    <script type="module">
-        // Make sure these functions are available globally
-        import { groupLocationsById } from './locationUtils.js';
-        window.groupLocationsById = groupLocationsById;
+        </main>
+        <footer>
+            <p>Click on the map to add a location</p>
+        </footer>
+    </div>
+
+    <!-- Load Leaflet JS with error handling -->
+    <script>
+        function loadScript(src, integrity, crossorigin, callback) {
+            const script = document.createElement('script');
+            script.src = src;
+            if (integrity) script.integrity = integrity;
+            if (crossorigin) script.crossOrigin = crossorigin;
+            script.onload = () => {
+                console.log('Script loaded successfully:', src);
+                if (callback) callback();
+            };
+            script.onerror = () => {
+                console.error('Error loading script:', src);
+            };
+            document.body.appendChild(script);
+        }
+
+        // Load Leaflet first
+        loadScript(
+            'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+            'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=',
+            'anonymous',
+            function() {
+                // After Leaflet loads, load our utility module
+                const utilScript = document.createElement('script');
+                utilScript.type = 'module';
+                utilScript.textContent = `
+                    import { groupLocationsById } from './locationUtils.js';
+                    window.groupLocationsById = groupLocationsById;
+                    console.log('Utility module loaded');
+                    
+                    // Load the app after everything is ready
+                    const appScript = document.createElement('script');
+                    appScript.type = 'module';
+                    appScript.src = 'app.js';
+                    document.body.appendChild(appScript);
+                `;
+                document.body.appendChild(utilScript);
+            }
+        );
     </script>
-    
-    <!-- Then load our app -->
-    <script type="module" src="app.js"></script>
 </body>
 </html>
 
