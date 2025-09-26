@@ -5,27 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Neighborhood Mapper</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            font-family: Arial, sans-serif;
-        }
-        
-        #map {
-            height: 600px;
-            width: 100%;
-            background-color: #e9ecef;
-        }
-        
-        .app-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            height: 100%;
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="app-container">
@@ -40,7 +21,7 @@
                             <input type="text" id="neighborhoodName" placeholder="Enter a name for this location" required>
                         </div>
                         <div id="coordinates" class="coordinates-display">
-                            Click on the map to set a location
+                            Drag the marker to your address!
                         </div>
                         <button type="submit" class="btn-save">
                             <i class="fas fa-save"></i> Save Location
@@ -56,8 +37,9 @@
                 </div>
             </div>
             
-            <div id="map"></div>
-        </div>
+            <div id="map-container">
+                <div id="map"></div>
+            </div>
         </div>
     </div>
 
