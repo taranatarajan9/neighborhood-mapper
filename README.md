@@ -1,0 +1,2 @@
+Is it cow hollow or the marina? Is it rincon hill, soma, or the financial district? Every neighborhood in San Francisco seems to be polyonymous. To settle the debate (or make it more heated), enter your neighborhood and your answer to the question "where in the city do you live?" 
+<img width="1136" height="589" alt="Screenshot 2025-09-28 at 11 39 27 AM" src="https://github.com/user-attachments/assets/54a417c8-43fc-492f-8188-fa85780822b8" />
