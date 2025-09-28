@@ -2,12 +2,20 @@
   "name": "neighborhood-mapper",
   "version": "1.0.0",
   "description": "A neighborhood mapping application",
-  "main": "app.js",
   "scripts": {
-    "start": "http-server -p 3000",
-    "dev": "http-server -p 3000"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
-    "http-server": "^14.1.1"
+    "next": "^14.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "leaflet": "^1.9.4"
+  },
+  "devDependencies": {
+    "eslint": "^8.50.0",
+    "eslint-config-next": "^14.0.0"
   }
 }
