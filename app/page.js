@@ -40,18 +40,11 @@ export default function Home() {
     setSavedLocations(prevLocations => [newLocation, ...prevLocations]);
   }, [setSavedLocations]);
 
-  // Handle selecting a location from the sidebar
-  const handleLocationSelect = useCallback((location) => {
-    setSelectedLocation(location);
-  }, []);
-
   return (
     <div className="map-container">
       <Sidebar
-        savedLocations={savedLocations}
         lastClickedCoords={lastClickedCoords}
         onLocationSave={handleLocationSave}
-        onLocationSelect={handleLocationSelect}
       />
       <Map
         savedLocations={savedLocations}
