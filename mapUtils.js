@@ -140,7 +140,4 @@ export function updateMapWithLocations(map, savedLocations, locationLayerGroup) 
       // Add to the group (the group is already on the map)
       square.addTo(locationLayerGroup);
     });
-  
-    const bounds = locationLayerGroup.getBounds();
-    if (bounds && bounds.isValid()) map.fitBounds(bounds.pad(0.1));
   }
