@@ -2,7 +2,11 @@
 
 'use strict';
 
-// ---- Application state ----
+// top of app.js
+import { updateMapWithLocations } from './mapUtils.js';
+import { createLocation } from './locationUtils.js'; // <-- add this
+
+
 let savedLocations = [];
 let lastClickedCoords = null;
 
@@ -15,19 +19,6 @@ let map = null;                 // Leaflet map instance
 let locationLayers = null;      // L.layerGroup() for saved locations
 let marker = null;              // Draggable marker
 
-// Optional: fallback if updateMapWithLocations isn't defined elsewhere
-const updateMapWithLocations =
-  window.updateMapWithLocations ||
-  function (mapInstance, locations, group) {
-    if (!mapInstance || !group) return;
-    group.clearLayers();
-    locations.forEach((loc) => {
-      L.circleMarker([loc.lat, loc.lng], { radius: 6 }).addTo(group)
-        .bindTooltip(`${loc.name} (${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)})`);
-    });
-  };
-
-// ---- DOMContentLoaded entrypoint ----
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Initializing application...');
 
@@ -48,12 +39,12 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error('Failed to initialize map/marker');
     return;
   }
+  console.log('map is initialized');
 
   // Events
   initEventListeners();
 
-  // Optionally load any saved locations from localStorage
-  // loadSavedLocations();
+  loadSavedLocations();
 
   // Ensure proper sizing after initial render
   setTimeout(() => {
@@ -98,7 +89,7 @@ function initMap() {
   L.control.zoom({ position: 'topright' }).addTo(window.map);
 
   // Layers & marker
-  locationLayers = L.layerGroup().addTo(window.map);
+  locationLayers = L.featureGroup().addTo(window.map);
 
   window.marker = L.marker([37.7749, -122.4194], {
     draggable: true,
@@ -157,6 +148,7 @@ function initEventListeners() {
         lng: lastClickedCoords.lng,
         date: new Date().toISOString()
       });
+      console.log("saved new location")
 
       neighborhoodNameInput.value = '';
       neighborhoodNameInput.focus();
@@ -165,9 +157,10 @@ function initEventListeners() {
 }
 
 // ---- Save & UI ----
-function saveLocation(location) {
-  const locationId = Date.now();
-  const newLocation = { id: locationId, ...location };
+function saveLocation({ name, lat, lng, date }) {
+  const newLocation = createLocation(name, { lat, lng });
+  // keep your date if provided
+  if (date) newLocation.date = date;
 
   savedLocations.unshift(newLocation);
   localStorage.setItem('savedLocations', JSON.stringify(savedLocations));
@@ -175,6 +168,7 @@ function saveLocation(location) {
   updateMapWithLocations(map, savedLocations, locationLayers);
   updateSavedLocations();
 }
+
 
 function updateSavedLocations() {
   if (!savedLocationsContainer) return;
@@ -207,10 +201,11 @@ function updateSavedLocations() {
 function loadSavedLocations() {
   try {
     const saved = localStorage.getItem('savedLocations');
+    console.log("updating map with stored locations")
     if (saved) {
       savedLocations = JSON.parse(saved) || [];
       if (locationLayers) locationLayers.clearLayers();
-      updateMapWithLocations(map, savedLocations, locationLayers);
+      updateMapWithLocations(window.map, savedLocations, locationLayers);
       updateSavedLocations();
     }
   } catch (err) {

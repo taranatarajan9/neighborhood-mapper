@@ -1,48 +1,31 @@
 // Map Utilities
-import { 
-    getAverageColor, 
-    getNeighborhoodColor
-} from './locationUtils.js';
-
-// Try to import groupLocationsById, fall back to global if not available
-let groupLocationsById;
-
-try {
-    const utils = await import('./locationUtils.js');
-    groupLocationsById = utils.groupLocationsById;
-} catch (e) {
-    console.warn('Could not import groupLocationsById, using global version');
-    groupLocationsById = window.groupLocationsById;
-}
+import {
+    getAverageColor,
+    getNeighborhoodColor,
+    groupLocationsById, // <- static import, no top-level await
+  } from './locationUtils.js';
 
 // Draw a square on the map for a location
-export function drawLocationSquare(map, location) {
-    console.log('Drawing location square for:', location);
-    
-    // Parse the location ID to get the center coordinates
+export function drawLocationSquare(location) {
     const [centerLat, centerLng] = location.id.split('_').map(Number);
-    const halfSize = 0.0005; // Half the size of the square in degrees
-    
-    // Define the bounds for the square
+    const halfSize = 0.0005;
+  
     const bounds = [
-        [centerLat - halfSize, centerLng - halfSize],
-        [centerLat + halfSize, centerLng + halfSize]
+      [centerLat - halfSize, centerLng - halfSize],
+      [centerLat + halfSize, centerLng + halfSize],
     ];
-    
-    console.log('Square bounds:', bounds);
-    
-    // Get the average color for all neighborhood names in this location
+  
     const fillColor = getAverageColor(location.names);
-    const borderColor = darkenColor(fillColor, 20); // Slightly darker border for better visibility
-    
+    const borderColor = darkenColor(fillColor, 20);
+  
+    // Create layer but DON'T add directly to map here
     const square = L.rectangle(bounds, {
-        color: borderColor,
-        weight: 1,
-        fillColor: fillColor,
-        fillOpacity: 0.7
-    }).addTo(map);
-    
-    // Create popup content with all neighborhood names and their colors
+      color: borderColor,
+      weight: 1,
+      fillColor: fillColor,
+      fillOpacity: 0.7,
+    });
+// Create popup content with all neighborhood names and their colors
     const popupContent = `
         <div style="min-width: 200px; max-height: 300px; overflow-y: auto;">
             <div style="margin-bottom: 8px; font-weight: bold;">
@@ -69,10 +52,8 @@ export function drawLocationSquare(map, location) {
             </div>
         </div>
     `;
-    
     // Bind popup to the square
     square.bindPopup(popupContent);
-    
     return square;
 }
 
@@ -149,61 +130,17 @@ function darkenColor(color, percent) {
 
 // Update the map with all saved locations
 export function updateMapWithLocations(map, savedLocations, locationLayerGroup) {
-    console.log('updateMapWithLocations called');
-    console.log('Map instance:', map);
-    console.log('Saved locations:', savedLocations);
-    
-    if (!map) {
-        console.error('Map instance is not available');
-        return;
-    }
-    
-    if (!locationLayerGroup) {
-        console.error('Location layer group is not available');
-        return;
-    }
-    
-    // Clear existing markers and squares
+    if (!map || !locationLayerGroup) return;
+  
     locationLayerGroup.clearLayers();
-    console.log('Cleared existing location markers');
-    
-    // Group locations by ID and draw squares
+  
     const groupedLocations = groupLocationsById(savedLocations);
-    console.log(`Grouped ${savedLocations.length} locations into ${groupedLocations.length} groups`);
-    
-    if (groupedLocations.length > 0) {
-        console.log('Drawing new squares...');
-        
-        groupedLocations.forEach((loc, index) => {
-            try {
-                console.log(`Drawing square ${index + 1}/${groupedLocations.length} for location:`, loc);
-                const square = drawLocationSquare(map, loc);
-                if (square) {
-                    // Add the square to the layer group
-                    square.addTo(locationLayerGroup);
-                    console.log(`Successfully added square ${index + 1}`);
-                } else {
-                    console.warn(`Failed to create square for location:`, loc);
-                }
-            } catch (error) {
-                console.error(`Error drawing square for location ${loc.id}:`, error);
-            }
-        });
-        
-        // Fit bounds to show all locations if we have any markers
-        const markers = locationLayerGroup.getLayers();
-        if (markers.length > 0) {
-            try {
-                console.log('Fitting map bounds to show all markers');
-                locationLayerGroup.getBounds() && map.fitBounds(locationLayerGroup.getBounds().pad(0.1));
-                console.log('Map bounds updated');
-            } catch (error) {
-                console.error('Error fitting map bounds:', error);
-            }
-        } else {
-            console.warn('No markers were created');
-        }
-    } else {
-        console.log('No locations to display');
-    }
-}
+    groupedLocations.forEach((loc) => {
+      const square = drawLocationSquare(loc);
+      // Add to the group (the group is already on the map)
+      square.addTo(locationLayerGroup);
+    });
+  
+    const bounds = locationLayerGroup.getBounds();
+    if (bounds && bounds.isValid()) map.fitBounds(bounds.pad(0.1));
+  }
