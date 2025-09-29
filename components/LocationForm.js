@@ -5,20 +5,13 @@ import { fetchNeighborhoodNames } from '../lib/locationUtils';
 
 export default function LocationForm({ lastClickedCoords, onLocationSave }) {
   const [neighborhoodName, setNeighborhoodName] = useState('');
-  const [coordinatesText, setCoordinatesText] = useState('Drag the marker to your address!');
   const [neighborhoodOptions, setNeighborhoodOptions] = useState([]);
   const [filteredOptions, setFilteredOptions] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const dropdownRef = useRef(null);
 
-  useEffect(() => {
-    if (lastClickedCoords) {
-      const { lat, lng } = lastClickedCoords;
-      setCoordinatesText(`Lat: ${Number(lat).toFixed(6)}, Lng: ${Number(lng).toFixed(6)}`);
-    }
-  }, [lastClickedCoords]);
-
+  
   // Load neighborhood options from database
   useEffect(() => {
     async function loadNeighborhoodOptions() {
@@ -137,9 +130,6 @@ export default function LocationForm({ lastClickedCoords, onLocationSave }) {
               </div>
             )}
           </div>
-        </div>
-        <div id="coordinates" className="coordinates-display">
-          {coordinatesText}
         </div>
         <button type="submit" className="btn-save">
           <i className="fas fa-save"></i> Save Location
