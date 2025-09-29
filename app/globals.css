@@ -513,6 +513,41 @@ footer {
     transition: all 0.2s ease;
 }
 
+/* Neighborhood dropdown styles */
+.dropdown-container {
+    position: relative;
+    width: 100%;
+}
+
+.neighborhood-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+}
+
+.dropdown-option {
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.dropdown-option:hover {
+    background-color: #f0f9ff;
+}
+
+.dropdown-option.no-results {
+    color: #888;
+    font-style: italic;
+}
+
 .leaflet-marker-icon.custom-marker::after {
     content: '';
     position: absolute;
