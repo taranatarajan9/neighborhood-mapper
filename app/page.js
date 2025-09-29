@@ -88,15 +88,15 @@ export default function Home() {
 
   return (
     <div className="map-container">
-      <Sidebar
-        lastClickedCoords={lastClickedCoords}
-        onLocationSave={handleLocationSave}
-      />
       <Map
         savedLocations={savedLocations}
         onLocationClick={handleLocationClick}
         onMarkerDrag={handleMarkerDrag}
         selectedLocation={selectedLocation}
+      />
+      <Sidebar
+        lastClickedCoords={lastClickedCoords}
+        onLocationSave={handleLocationSave}
       />
     </div>
   );

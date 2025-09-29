@@ -1,8 +1,8 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'Neighborhood Mapper',
-  description: 'A neighborhood mapping application',
+  title: 'What SF neighborhood do you live in?',
+  description: 'San Francisco neighborhood mapping application',
 };
 
 export default function RootLayout({ children }) {
@@ -22,10 +22,13 @@ export default function RootLayout({ children }) {
           crossOrigin="anonymous" 
           referrerPolicy="no-referrer" 
         />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body>
         <div className="app-container">
-          <h1>Neighborhood Mapper</h1>
+          <h1>What SF neighborhood do you live in?</h1>
           {children}
         </div>
       </body>

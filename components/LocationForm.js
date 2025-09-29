@@ -94,10 +94,10 @@ export default function LocationForm({ lastClickedCoords, onLocationSave }) {
 
   return (
     <div className="sidebar-section">
-      <h3>Name This Location</h3>
+      <h3>Drag the marker to your home and tell us what you call it! </h3>
       <form id="locationForm" onSubmit={handleSubmit}>
         <div className="form-group" ref={dropdownRef}>
-          <label htmlFor="neighborhoodName">Neighborhood Name</label>
+          <label htmlFor="neighborhoodName">I live in: </label>
           <div className="dropdown-container">
             <input
               type="text"
@@ -132,7 +132,7 @@ export default function LocationForm({ lastClickedCoords, onLocationSave }) {
           </div>
         </div>
         <button type="submit" className="btn-save">
-          <i className="fas fa-save"></i> Save Location
+          <i className="fas fa-map-marker-alt"></i> This is my neighborhood!
         </button>
       </form>
     </div>
