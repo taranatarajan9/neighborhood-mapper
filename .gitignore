@@ -28,3 +28,7 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Generated files
+get_location_coordinates.py
+neighborhood_grid.csv
