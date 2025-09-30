@@ -81,6 +81,12 @@ export default function LocationForm({ lastClickedCoords, onLocationSave }) {
       alert('Please enter a name for this location');
       return;
     }
+    
+    // Validate that the entered name exists in the neighborhood options
+    if (!neighborhoodOptions.some(option => option.toLowerCase() === name.toLowerCase())) {
+      alert('Please select a neighborhood from the dropdown list');
+      return;
+    }
 
     onLocationSave({
       name,
@@ -125,7 +131,7 @@ export default function LocationForm({ lastClickedCoords, onLocationSave }) {
             {isDropdownOpen && filteredOptions.length === 0 && (
               <div className="neighborhood-dropdown">
                 <div className="dropdown-option no-results">
-                  No matches found. Enter a new neighborhood name.
+                  No matches found. Please try a different search term.
                 </div>
               </div>
             )}
